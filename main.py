@@ -34,6 +34,15 @@ def transform(position_3d):
     p = convert3Dto2D(position_3d)
     p = viewport_transform(p)
 
+    return p
+
+
+def move_transform(position_3d):
+    p = convert3Dto2D(position_3d)
+
+    return p
+
+
 
     return p[0], p[1]
 
@@ -45,50 +54,71 @@ class Sprite(object):
         self.x = kwargs['x']
         self.y = kwargs['y']
 
+        self.parts = list()
+
     def draw(self):
+        coords = None
+
+        # Building the contour of the bounding box
         p0 = transform((0, 0, 0))
         p1 = transform((0, 50, 0))
-        self.container.create_line(p0[0], p0[1], p1[0], p1[1], fill = 'red')
-
-        p0 = p1
-        p1 = transform((0, 50, 0))
-        self.container.create_line(p0[0], p0[1], p1[0], p1[1], fill = 'red')
+        coords = p0 + p1
 
         p0= p1
         p1 = transform((50, 50, 0))
-        self.container.create_line(p0[0], p0[1], p1[0], p1[1], fill = 'red')
+        coords += p0 + p1        
 
         p0= p1
         p1 = transform((50, 50, 100))
-        self.container.create_line(p0[0], p0[1], p1[0], p1[1], fill = 'red')
+        coords += p0 + p1        
 
+        p0= p1
+        p1 = transform((50, 0, 100))
+        coords += p0 + p1        
+
+        p0= p1
+        p1 = transform((0, 0, 100))
+        coords += p0 + p1        
+
+        self.parts.append(self.container.create_polygon(list(coords), fill = '#ffaaaa', outline = '#ff0000'))
+
+        # Building the facing edge of the bounding box
         p0= p1
         p1 = transform((0, 50, 100))
-        self.container.create_line(p0[0], p0[1], p1[0], p1[1], fill = 'red')
-
-        p0= p1
-        p1 = transform((0, 50, 0))
-        self.container.create_line(p0[0], p0[1], p1[0], p1[1], fill = 'red')
-
-        p0= transform((0, 50, 100))
-        p1 = transform((0, 0, 100))
-        self.container.create_line(p0[0], p0[1], p1[0], p1[1], fill = 'red')
-
-        p0= p1
-        p1 = transform((0, 0, 0))
-        self.container.create_line(p0[0], p0[1], p1[0], p1[1], fill = 'red')
-
-        p0 = transform((0, 0, 100))
-        p1 = transform((50, 0, 100))
-        self.container.create_line(p0[0], p0[1], p1[0], p1[1], fill = 'red')
+        coords += p0 + p1        
+        self.parts.append(self.container.create_line(p0[0], p0[1], p1[0], p1[1], fill = 'red'))
 
         p0= p1
         p1 = transform((50, 50, 100))
-        self.container.create_line(p0[0], p0[1], p1[0], p1[1], fill = 'red')
+        coords += p0 + p1        
+        self.parts.append(self.container.create_line(p0[0], p0[1], p1[0], p1[1], fill = 'red')) 
 
+        p0= transform((0, 50, 100))
+        p1 = transform((0, 50, 0))
+        coords += p0 + p1        
+        self.parts.append(self.container.create_line(p0[0], p0[1], p1[0], p1[1], fill = 'red')) 
 
         self.container.pack(fill = tk.BOTH, expand = 1)
-        pass
+        #pass
+
+    def move(self, evnt):
+        print(r"{0} - {1}".format(evnt.keysym, evnt.keycode))        
+        step = 10
+        for p in self.parts:
+            if "Left" == evnt.keysym:
+                coord = move_transform((0,-step,0))
+                self.container.move(p, coord[0], coord[1])
+            elif "Right" == evnt.keysym:
+                coord = move_transform((0,step,0))
+                self.container.move(p, coord[0], coord[1])
+            elif "Down" == evnt.keysym:
+                coord = move_transform((-step,0,0))
+                self.container.move(p, coord[0], coord[1])
+            elif "Up" == evnt.keysym:
+                coord = move_transform((step,0,0))
+                self.container.move(p, coord[0], coord[1])
+
+        
 
 
 
@@ -104,28 +134,29 @@ class Tile(object):
 
 
     def draw(self):
+        coords = None
+
         p0 = transform((self.col * self.side_length, self.row * self.side_length, 0))
         p1 = transform((self.col * self.side_length, self.row * self.side_length + self.side_length, 0))
-
-        self.container.create_line(p0[0],p0[1], p1[0], p1[1], fill = 'grey')
+        coords = p0 + p1
         
         p0 = p1
         p1 = transform((self.col * self.side_length + self.side_length, self.row * self.side_length + self.side_length, 0))
-
-        self.container.create_line(p0[0],p0[1], p1[0], p1[1], fill = "grey")
+        coords += p0 + p1
 
         
         p0 = p1
         p1 = transform((self.col * self.side_length + self.side_length, self.row * self.side_length, 0))
+        coords += p0 + p1
 
-        self.container.create_line(p0[0],p0[1], p1[0], p1[1], fill = "grey")
 
         p0 = p1
         p1 = transform((self.col * self.side_length, self.row * self.side_length, 0))
+        coords += p0 + p1
 
-        self.container.create_line(p0[0],p0[1], p1[0], p1[1], fill = "grey")
+        self.container.create_polygon(list(coords), outline='#cccccc', fill='#dddddd', width = 1)
 
-        self.container.pack(fill = tk.BOTH, expand = 1)
+
 
 
 
@@ -148,11 +179,6 @@ class Map(tk.Canvas):
             for row in range(-5, 5):
                 tile = Tile(self, col = col, row = row)
                 tile.draw()
-
-            
-
-
-
 
 
 
@@ -179,6 +205,8 @@ def create_window():
     map = Map(master = root)
     sprite = Sprite(container = map, x = 0, y = 0)
     sprite.draw()
+
+    map.bind_all('<Key>', sprite.move)
 
 
     root.mainloop()
