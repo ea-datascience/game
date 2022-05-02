@@ -4,9 +4,12 @@
 
 
 from cmath import sqrt
-from ftplib import parse150
+#from functools import cache
+#from ftplib import parse150
 import tkinter as tk
-from turtle import color
+from PIL import Image, ImageTk
+import time
+#from turtle import color
 
 
 def convert2DTo3D(position_2d):
@@ -45,6 +48,91 @@ def move_transform(position_3d):
 
 
     return p[0], p[1]
+
+class Hero(object):
+    def __init__(self, container = None, **kwargs):
+        super().__init__()
+        self.container = container 
+
+        self.x = kwargs['x']
+        self.y = kwargs['y']
+
+        self.image = Image.open("images/spaghetti_atlas.png")
+        self.frame_counter = 0
+        self.img_width = self.image.size[0]/24
+        self.img_height = self.image.size[1]/12
+        self.number_of_frames = 6
+        self.cache = {
+            "Idle":dict(),
+            "Up": dict(),
+            "Down": dict(),
+            "Left": dict(),
+            "Right": dict()
+        }
+        self.image_sprite = None
+
+    def initialize(self):
+        coord = transform((self.x,self.y,0))
+        dimensions = (self.frame_counter * self.img_width, 0,\
+                (self.frame_counter + 1) * self.img_width, self.img_height)
+        cropped = self.image.crop(dimensions)           
+        img = ImageTk.PhotoImage(cropped)
+        self.cache["Idle"][0] = img
+        self.image_sprite = self.container.create_image(coord[0], coord[1], image = img)
+        self.container.update()
+
+
+    def animate(self, offset, key, pos):
+        self.frame_counter = self.frame_counter + 1
+        self.frame_counter = self.frame_counter % self.number_of_frames
+
+        if self.frame_counter in self.cache[key].keys():
+            img = self.cache[key][self.frame_counter]
+        else:
+            dimensions = (      self.frame_counter * self.img_width + offset[0], 0               + offset[1],\
+                          (self.frame_counter + 1) * self.img_width + offset[0], self.img_height + offset[1]) 
+            cropped = self.image.crop(dimensions)           
+            img = ImageTk.PhotoImage(cropped)
+            self.cache[key][self.frame_counter] = img
+
+        if not self.image_sprite is None:
+            self.container.delete(self.image_sprite)
+
+        self.image_sprite = self.container.create_image(pos[0], pos[1], image = img)
+        print(r"{0}, {1}".format(pos[0], pos[1]))        
+
+        self.container.update()
+        time.sleep(1/12)
+
+    def move(self, evnt):
+        print(r"{0} - {1}".format(evnt.keysym, evnt.keycode))        
+        step = 10
+        
+        if "Left" == evnt.keysym:
+            self.x = self.x
+            self.y = self.y - step
+            coord = transform((self.x,self.y,0))
+            self.animate(offset = (3 * self.number_of_frames * self.img_width, 0 * self.img_height), key = evnt.keysym, pos = coord)
+        elif "Right" == evnt.keysym:
+            self.x = self.x
+            self.y = self.y + step            
+            coord = transform((self.x,self.y,0))
+            self.animate(offset = (2 * self.number_of_frames * self.img_width, 1 * self.img_height), key = evnt.keysym, pos = coord)
+        elif "Down" == evnt.keysym:
+            self.x = self.x - step
+            self.y = self.y            
+            coord = transform((self.x,self.y,0))
+            self.animate(offset = (1 * self.number_of_frames * self.img_width, 1 * self.img_height), key = evnt.keysym, pos = coord)
+        elif "Up" == evnt.keysym:
+            self.x = self.x + step
+            self.y = self.y           
+            coord = transform((self.x, self.y,0))
+            self.animate(offset = (1 * self.number_of_frames * self.img_width, 0 * self.img_height), key = evnt.keysym, pos = coord)
+
+
+        
+
+    
 
 class Sprite(object):
     def __init__(self, container = None, **kwargs):
@@ -132,6 +220,8 @@ class Tile(object):
         self.col = kwargs["col"]
         self.row = kwargs["row"]
 
+        
+
 
     def draw(self):
         coords = None
@@ -156,6 +246,9 @@ class Tile(object):
 
         self.container.create_polygon(list(coords), outline='#cccccc', fill='#dddddd', width = 1)
 
+def texturize(self):
+    pass
+
 
 
 
@@ -168,6 +261,9 @@ class Map(tk.Canvas):
 
         self.initUI()
 
+        self.image = Image.open("images/isometric_0056.png")
+        self.tiles = list()
+
     def initUI(self):
 
         #self.pack(fill = tk.BOTH, expand = 1)
@@ -175,10 +271,15 @@ class Map(tk.Canvas):
         # Drawing the tiles on the map
         # ------------------------------------------------------------
 
+        
         for col in range(-5, 5):
             for row in range(-5, 5):
                 tile = Tile(self, col = col, row = row)
                 tile.draw()
+                #tile.texturize(texture = self.image)
+
+    def draw(self):
+        self.pack(fill = tk.BOTH, expand = 1)
 
 
 
@@ -203,10 +304,15 @@ def create_window():
     root.resizable(False, False)
 
     map = Map(master = root)
+    map.draw()
     sprite = Sprite(container = map, x = 0, y = 0)
-    sprite.draw()
+    #sprite.draw()
 
-    map.bind_all('<Key>', sprite.move)
+    hero = Hero(container = map, x = 0, y = 0)
+    hero.initialize()
+
+    #map.bind_all('<Key>', sprite.move)
+    map.bind_all('<Key>', hero.move)
 
 
     root.mainloop()

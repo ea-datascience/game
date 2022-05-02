@@ -18,19 +18,22 @@ root.geometry("550x300+300+150")
 root.resizable(width = True, height = True)
 
 canvas = Canvas(master = root, width=550, height=300)
+canvas.create_polygon(0, 0, 0, 100, 100, 100, 0, 100, 0, 0, fill = 'red', outline = 'red')
 canvas.pack()
 
 i = 0
+x = 0
+y = 0
 img_width = image.size[0]/24
 img_height = image.size[1]/12
 number_of_frames = 6
+image_sprite = None
 
 cache = dict()
 
-def run_animation(offset, key):
-    
+def run_animation(offset, key, pos):
 
-    global i, canvas, image, cache
+    global i, canvas, image, cache, image_sprite
     i = i + 1
     i = i%number_of_frames
     print(i)
@@ -43,15 +46,16 @@ def run_animation(offset, key):
         img = cache[key][i]
     else:
         dimensions = (      i*img_width + offset[0], 0          + offset[1],\
-                    (i + 1)*img_width + offset[0], img_height + offset[1])
+                    (i + 1)*img_width + offset[0]  , img_height + offset[1])
         cropped = image.crop(dimensions)
         img= ImageTk.PhotoImage(cropped)
         cache[key][i] = img
 
     
-
-    canvas.delete('all')
-    image_sprite = canvas.create_image(100, 100, image = img)
+    if not image_sprite is None:
+        #canvas.delete('all')
+        canvas.delete(image_sprite)
+    image_sprite = canvas.create_image(100 + pos[0], 100 + pos[1], image = img)
 
     root.update()
     time.sleep(1/12)
@@ -59,17 +63,24 @@ def run_animation(offset, key):
     
 
 def move(evnt):
+    global x, y
+
     if "Left" == evnt.keysym:
-        run_animation(offset = (0, img_height), key = evnt.keysym)
+        x = x - img_width/4
+        run_animation(offset = (0, img_height), key = evnt.keysym, pos = (x, y))
     elif "Right" == evnt.keysym:
-        run_animation(offset = (0,0), key = evnt.keysym)
+        x = x + img_width/4
+        run_animation(offset = (0,0), key = evnt.keysym, pos = (x, y))
     elif "Down" == evnt.keysym:
-        run_animation(offset = (3 * number_of_frames * img_width,img_height), key = evnt.keysym)
+        y = y + img_height/4
+        run_animation(offset = (3 * number_of_frames * img_width,img_height), key = evnt.keysym, pos = (x, y))
     elif "Up" == evnt.keysym:
-        run_animation(offset = (2 * number_of_frames * img_width,0), key = evnt.keysym)
+        y = y - img_height/4
+        run_animation(offset = (2 * number_of_frames * img_width,0), key = evnt.keysym, pos = (x, y))
 
 
 canvas.bind_all('<Key>', move)
+
 
 root.mainloop()
 
