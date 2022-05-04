@@ -261,8 +261,13 @@ class Map(tk.Canvas):
 
         self.initUI()
 
-        self.image = Image.open("images/isometric_0056.png")
+        self.image = Image.open("images/isometric_pixel_0056.png")
         self.tiles = list()
+
+        self.number_of_columns = 20
+        self.number_of_rows = 20
+
+        self.tiles = list()        
 
     def initUI(self):
 
@@ -279,7 +284,21 @@ class Map(tk.Canvas):
                 #tile.texturize(texture = self.image)
 
     def draw(self):
-        self.pack(fill = tk.BOTH, expand = 1)
+        min_range_col = -int(self.number_of_columns/2)
+        max_range_col = int(self.number_of_columns/2)
+
+        min_range_row = -int(self.number_of_rows/2)
+        max_range_row = int(self.number_of_rows/2)
+
+        for col in range(max_range_col, min_range_col, -1):
+            for row in range(min_range_row,max_range_row,1):
+                p = transform((col * 37, row * 37, 0))
+                print(p)
+                img = ImageTk.PhotoImage(self.image)
+                self.tiles.append(img)
+                self.create_image(p[0], p[1], image = img)
+
+        self.pack(fill = tk.BOTH, expand = 1)        
 
 
 
